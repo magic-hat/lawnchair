@@ -16,6 +16,8 @@ object LauncherOptionsPopup {
     val DEFAULT_ORDER = listOf(
         LauncherOptionPopupItem("carousel", true),
         LauncherOptionPopupItem("shuffle", true),
+        LauncherOptionPopupItem("save_layout", true),
+        LauncherOptionPopupItem("restore_layout", true),
         LauncherOptionPopupItem("lock", false),
         LauncherOptionPopupItem("edit_mode", false),
         LauncherOptionPopupItem("wallpaper", true),
@@ -54,6 +56,8 @@ object LauncherOptionsPopup {
         onStartWidgetsMenu: (View) -> Boolean,
         onStartHomeSettings: (View) -> Boolean,
         onShuffle: (View) -> Boolean = { false },
+        onSaveLayout: (View) -> Boolean = { false },
+        onRestoreLayout: (View) -> Boolean = { false },
     ): ArrayList<OptionItem> {
         val prefs2 = getInstance(launcher!!)
         val lockHomeScreen = prefs2.lockHomeScreen.firstBlocking()
@@ -72,6 +76,20 @@ object LauncherOptionsPopup {
                 R.drawable.ic_shuffle,
                 LauncherEvent.IGNORE,
                 onShuffle,
+            ),
+            "save_layout" to OptionItem(
+                launcher,
+                R.string.save_layout_action,
+                R.drawable.ic_save_layout,
+                LauncherEvent.IGNORE,
+                onSaveLayout,
+            ),
+            "restore_layout" to OptionItem(
+                launcher,
+                R.string.restore_layout_action,
+                R.drawable.ic_restore_layout,
+                LauncherEvent.IGNORE,
+                onRestoreLayout,
             ),
             "lock" to OptionItem(
                 launcher,
@@ -140,6 +158,16 @@ object LauncherOptionsPopup {
             "shuffle" -> LauncherOptionMetadata(
                 label = R.string.shuffle_action,
                 icon = R.drawable.ic_shuffle,
+            )
+
+            "save_layout" -> LauncherOptionMetadata(
+                label = R.string.save_layout_action,
+                icon = R.drawable.ic_save_layout,
+            )
+
+            "restore_layout" -> LauncherOptionMetadata(
+                label = R.string.restore_layout_action,
+                icon = R.drawable.ic_restore_layout,
             )
 
             "carousel" -> LauncherOptionMetadata(

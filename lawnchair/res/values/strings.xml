@@ -927,4 +927,13 @@
     <string name="shuffle_description">Randomize app positions on your home screen? Folders and widgets will stay in place.</string>
     <string name="shuffle_no_items">No apps to shuffle</string>
     <string name="shuffle_complete">Apps shuffled</string>
+    <string name="save_layout_action">Save layout</string>
+    <string name="save_layout_description">Save your current home screen layout as a restore point. This replaces any previously saved layout.</string>
+    <string name="save_layout_complete">Layout saved</string>
+    <string name="save_layout_failed">Could not save layout</string>
+    <string name="restore_layout_action">Restore layout</string>
+    <string name="restore_layout_description">Restore your saved home screen layout? This will undo any shuffles since the last save.</string>
+    <string name="restore_layout_complete">Layout restored</string>
+    <string name="restore_layout_no_snapshot">No saved layout yet</string>
+    <string name="restore_layout_failed">Could not restore layout</string>
 </resources>

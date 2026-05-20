@@ -207,7 +207,9 @@ public class OptionsPopupView<T extends Context & ActivityContext> extends Arrow
             OptionsPopupView::startWallpaperPicker,
             OptionsPopupView::onWidgetsClicked,
             OptionsPopupView::startSettings,
-            OptionsPopupView::onShuffleClicked
+            OptionsPopupView::onShuffleClicked,
+            OptionsPopupView::onSaveLayoutClicked,
+            OptionsPopupView::onRestoreLayoutClicked
         );
     }
 
@@ -225,6 +227,54 @@ public class OptionsPopupView<T extends Context & ActivityContext> extends Arrow
                         Toast.LENGTH_SHORT).show()
                 );
             })
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+            .show();
+        return true;
+    }
+
+    private static boolean onSaveLayoutClicked(View view) {
+        Launcher launcher = Launcher.getLauncher(view.getContext());
+        app.lawnchair.shuffle.LayoutSnapshotManager manager =
+            new app.lawnchair.shuffle.LayoutSnapshotManager(launcher, launcher.getModel());
+        Runnable save = () -> manager.saveSnapshot(
+            () -> Snackbar.show(launcher, R.string.save_layout_complete, null),
+            () -> Toast.makeText(launcher, R.string.save_layout_failed,
+                Toast.LENGTH_SHORT).show()
+        );
+        if (manager.hasSnapshot()) {
+            new AlertDialog.Builder(launcher)
+                .setTitle(R.string.save_layout_action)
+                .setMessage(R.string.save_layout_description)
+                .setPositiveButton(R.string.save_layout_action, (d, i) -> save.run())
+                .setNegativeButton(android.R.string.cancel, null)
+                .create()
+                .show();
+        } else {
+            save.run();
+        }
+        return true;
+    }
+
+    private static boolean onRestoreLayoutClicked(View view) {
+        Launcher launcher = Launcher.getLauncher(view.getContext());
+        app.lawnchair.shuffle.LayoutSnapshotManager manager =
+            new app.lawnchair.shuffle.LayoutSnapshotManager(launcher, launcher.getModel());
+        if (!manager.hasSnapshot()) {
+            Toast.makeText(launcher, R.string.restore_layout_no_snapshot,
+                Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        new AlertDialog.Builder(launcher)
+            .setTitle(R.string.restore_layout_action)
+            .setMessage(R.string.restore_layout_description)
+            .setPositiveButton(R.string.restore_layout_action, (d, i) -> manager.restoreSnapshot(
+                () -> Snackbar.show(launcher, R.string.restore_layout_complete, null),
+                () -> Toast.makeText(launcher, R.string.restore_layout_no_snapshot,
+                    Toast.LENGTH_SHORT).show(),
+                () -> Toast.makeText(launcher, R.string.restore_layout_failed,
+                    Toast.LENGTH_SHORT).show()
+            ))
             .setNegativeButton(android.R.string.cancel, null)
             .create()
             .show();
