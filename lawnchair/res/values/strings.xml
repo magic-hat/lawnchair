@@ -936,4 +936,6 @@
     <string name="restore_layout_complete">Layout restored</string>
     <string name="restore_layout_no_snapshot">No saved layout yet</string>
     <string name="restore_layout_failed">Could not restore layout</string>
+    <string name="shuffle_pin_action">Pin</string>
+    <string name="shuffle_unpin_action">Unpin</string>
 </resources>
