@@ -921,4 +921,10 @@
     <string name="grant_requested_permissions_tap">Tap to grant permissions</string>
     <!-- Message shown when all home screen views are removed -->
     <string name="home_screen_all_views_removed_msg">Home screen cleared</string>
+
+    <!-- Shuffle feature -->
+    <string name="shuffle_action">Shuffle</string>
+    <string name="shuffle_description">Randomize app positions on your home screen? Folders and widgets will stay in place.</string>
+    <string name="shuffle_no_items">No apps to shuffle</string>
+    <string name="shuffle_complete">Apps shuffled</string>
 </resources>

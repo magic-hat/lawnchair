@@ -17,6 +17,7 @@ package com.android.launcher3.views;
 
 import static com.android.launcher3.LauncherState.EDIT_MODE;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -48,6 +49,7 @@ import com.android.launcher3.popup.ArrowPopup;
 import com.android.launcher3.shortcuts.DeepShortcutView;
 import com.android.launcher3.testing.TestLogging;
 import com.android.launcher3.testing.shared.TestProtocol;
+import com.android.launcher3.views.Snackbar;
 import com.android.launcher3.widget.picker.WidgetsFullSheet;
 import com.patrykmichalik.opto.core.PreferenceExtensionsKt;
 
@@ -204,8 +206,29 @@ public class OptionsPopupView<T extends Context & ActivityContext> extends Arrow
             OptionsPopupView::enterHomeGardening,
             OptionsPopupView::startWallpaperPicker,
             OptionsPopupView::onWidgetsClicked,
-            OptionsPopupView::startSettings
+            OptionsPopupView::startSettings,
+            OptionsPopupView::onShuffleClicked
         );
+    }
+
+    private static boolean onShuffleClicked(View view) {
+        Launcher launcher = Launcher.getLauncher(view.getContext());
+        new AlertDialog.Builder(launcher)
+            .setTitle(R.string.shuffle_action)
+            .setMessage(R.string.shuffle_description)
+            .setPositiveButton(R.string.shuffle_action, (d, i) -> {
+                app.lawnchair.shuffle.ShuffleManager shuffleManager =
+                    new app.lawnchair.shuffle.ShuffleManager(launcher, launcher.getModel());
+                shuffleManager.shuffleNow(
+                    () -> Snackbar.show(launcher, R.string.shuffle_complete, null),
+                    () -> Toast.makeText(launcher, R.string.shuffle_no_items,
+                        Toast.LENGTH_SHORT).show()
+                );
+            })
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+            .show();
+        return true;
     }
 
     private static boolean enterHomeGardening(View view) {

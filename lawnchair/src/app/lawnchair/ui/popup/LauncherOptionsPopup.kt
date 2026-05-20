@@ -15,6 +15,7 @@ import com.patrykmichalik.opto.core.setBlocking
 object LauncherOptionsPopup {
     val DEFAULT_ORDER = listOf(
         LauncherOptionPopupItem("carousel", true),
+        LauncherOptionPopupItem("shuffle", true),
         LauncherOptionPopupItem("lock", false),
         LauncherOptionPopupItem("edit_mode", false),
         LauncherOptionPopupItem("wallpaper", true),
@@ -52,6 +53,7 @@ object LauncherOptionsPopup {
         onStartWallpaperPicker: (View) -> Boolean,
         onStartWidgetsMenu: (View) -> Boolean,
         onStartHomeSettings: (View) -> Boolean,
+        onShuffle: (View) -> Boolean = { false },
     ): ArrayList<OptionItem> {
         val prefs2 = getInstance(launcher!!)
         val lockHomeScreen = prefs2.lockHomeScreen.firstBlocking()
@@ -64,6 +66,13 @@ object LauncherOptionsPopup {
             if (Utilities.existsStyleWallpapers(launcher)) R.drawable.ic_palette else R.drawable.ic_wallpaper
 
         val optionsList = mapOf(
+            "shuffle" to OptionItem(
+                launcher,
+                R.string.shuffle_action,
+                R.drawable.ic_shuffle,
+                LauncherEvent.IGNORE,
+                onShuffle,
+            ),
             "lock" to OptionItem(
                 launcher,
                 if (lockHomeScreen) R.string.home_screen_unlock else R.string.home_screen_lock,
@@ -128,6 +137,11 @@ object LauncherOptionsPopup {
 
     fun getMetadataForOption(identifier: String): LauncherOptionMetadata {
         return when (identifier) {
+            "shuffle" -> LauncherOptionMetadata(
+                label = R.string.shuffle_action,
+                icon = R.drawable.ic_shuffle,
+            )
+
             "carousel" -> LauncherOptionMetadata(
                 label = R.string.wallpaper_quick_picker,
                 icon = R.drawable.ic_wallpaper,
