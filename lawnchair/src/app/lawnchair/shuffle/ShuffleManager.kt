@@ -3,11 +3,13 @@ package app.lawnchair.shuffle
 import android.content.ContentValues
 import android.content.Context
 import android.util.Log
+import app.lawnchair.data.shufflepin.ShufflePinRepository
 import com.android.launcher3.InvariantDeviceProfile
 import com.android.launcher3.LauncherModel
 import com.android.launcher3.LauncherSettings.Favorites
 import com.android.launcher3.model.BgDataModel
 import com.android.launcher3.model.data.ItemInfo
+import com.android.launcher3.util.ComponentKey
 import com.android.launcher3.util.Executors
 import com.android.launcher3.util.GridOccupancy
 
@@ -69,6 +71,8 @@ class ShuffleManager(
             ArrayList(dataModel.appWidgets)
         }
 
+        val pinnedKeys = ShufflePinRepository.INSTANCE.get(context).pinnedSet
+
         // Separate items into shuffleable and fixed
         val shuffleableItems = mutableListOf<ItemInfo>()
         val fixedItems = mutableListOf<ItemInfo>()
@@ -76,12 +80,11 @@ class ShuffleManager(
         for (item in allWorkspaceItems) {
             if (item.container != Favorites.CONTAINER_DESKTOP) continue
 
+            val component = item.targetComponent
             when {
-                // Folders are treated as pinned in MVP
                 item.itemType == Favorites.ITEM_TYPE_FOLDER -> fixedItems.add(item)
-                // App pairs are treated as pinned
                 item.itemType == Favorites.ITEM_TYPE_APP_PAIR -> fixedItems.add(item)
-                // Regular apps and shortcuts are shuffleable
+                component != null && ComponentKey(component, item.user) in pinnedKeys -> fixedItems.add(item)
                 else -> shuffleableItems.add(item)
             }
         }
