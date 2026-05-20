@@ -2,6 +2,9 @@ package app.lawnchair.data.shufflepin
 
 import android.content.Context
 import app.lawnchair.data.AppDatabase
+import com.android.launcher3.LauncherAppState
+import com.android.launcher3.pm.PackageInstallInfo
+import com.android.launcher3.pm.PackageInstallInfo.STATUS_INSTALLED
 import com.android.launcher3.util.ComponentKey
 import com.android.launcher3.util.MainThreadInitializedObject
 import kotlinx.coroutines.CoroutineName
@@ -11,7 +14,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 
-class ShufflePinRepository(context: Context) {
+class ShufflePinRepository(private val context: Context) {
 
     private val scope = MainScope() + CoroutineName("ShufflePinRepository")
     private val dao = AppDatabase.INSTANCE.get(context).shufflePinDao()
@@ -34,6 +37,13 @@ class ShufflePinRepository(context: Context) {
 
     suspend fun setPinned(target: ComponentKey, pinned: Boolean) {
         if (pinned) dao.insert(ShufflePin(target)) else dao.delete(target)
+        LauncherAppState.getInstance(context).model.onPackageStateChanged(
+            PackageInstallInfo.fromState(
+                STATUS_INSTALLED,
+                target.componentName.packageName,
+                target.user,
+            ),
+        )
     }
 
     companion object {
