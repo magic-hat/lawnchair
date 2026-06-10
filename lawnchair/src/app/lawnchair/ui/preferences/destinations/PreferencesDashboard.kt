@@ -71,6 +71,7 @@ import app.lawnchair.ui.preferences.navigation.HomeScreen
 import app.lawnchair.ui.preferences.navigation.PreferenceRootRoute
 import app.lawnchair.ui.preferences.navigation.Quickstep
 import app.lawnchair.ui.preferences.navigation.Search
+import app.lawnchair.ui.preferences.navigation.Shuffle
 import app.lawnchair.ui.preferences.navigation.Smartspace
 import app.lawnchair.ui.theme.isSelectedThemeDark
 import app.lawnchair.ui.theme.preferenceGroupColor
@@ -124,6 +125,14 @@ fun PreferencesDashboard(
                 iconResource = R.drawable.ic_home_screen,
                 onNavigate = { onNavigate(HomeScreen) },
                 isSelected = currentRoute is HomeScreen,
+            )
+
+            PreferenceCategory(
+                label = stringResource(R.string.shuffle_settings_label),
+                description = stringResource(R.string.shuffle_settings_description),
+                iconResource = R.drawable.ic_shuffle,
+                onNavigate = { onNavigate(Shuffle) },
+                isSelected = currentRoute is Shuffle,
             )
 
             PreferenceCategory(
