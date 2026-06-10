@@ -182,6 +182,16 @@ class PreferenceManager2 @Inject constructor(
         defaultValue = context.resources.getBoolean(R.bool.config_default_always_reload_icons),
     )
 
+    /**
+     * When enabled, the launcher saves a restore point of the home screen layout
+     * before each shuffle. Auto-saved restore points are refreshed on every shuffle,
+     * but a layout the user saved manually is never overwritten.
+     */
+    val autoSaveLayoutBeforeShuffle = preference(
+        key = booleanPreferencesKey(name = "auto_save_layout_before_shuffle"),
+        defaultValue = true,
+    )
+
     val colorStyle = preference(
         key = stringPreferencesKey("color_style"),
         defaultValue = ColorStyle.fromString("tonal_spot"),

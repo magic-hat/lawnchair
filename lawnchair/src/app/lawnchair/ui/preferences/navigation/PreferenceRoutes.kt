@@ -88,6 +88,9 @@ data object Gestures : PreferenceRootRoute, PreferenceDeepLink {
 }
 
 @Serializable
+data object Shuffle : PreferenceRootRoute
+
+@Serializable
 data object Smartspace : PreferenceRootRoute, PreferenceDeepLink {
     override val deepLink = "$URI/smartspace"
 }

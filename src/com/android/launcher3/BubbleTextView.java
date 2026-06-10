@@ -97,6 +97,7 @@ import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.popup.PopupContainerWithArrow;
 import com.android.launcher3.search.StringMatcherUtility;
 import com.android.launcher3.util.CancellableTask;
+import com.android.launcher3.util.ComponentKey;
 import com.android.launcher3.util.IntArray;
 import com.android.launcher3.util.MultiTranslateDelegate;
 import com.android.launcher3.util.SafeCloseable;
@@ -232,6 +233,15 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     private final String mMinimizedStateDescription;
     private final String mRunningStateDescription;
 
+    private final Paint mPinIndicatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Rect mPinIndicatorIconBounds = new Rect();
+    private final int mPinIndicatorColor = Themes.getColorAccent(getContext());
+    // Faint dark edge drawn just outside the light halo so it stays legible on
+    // light icons/wallpapers (invisible on dark backgrounds where white already reads).
+    private static final int PIN_INDICATOR_OUTLINE_COLOR = 0x33000000;
+    // Cached at bind time so onDraw never allocates a ComponentKey or hits the repository.
+    private boolean mIsPinned;
+
     /**
      * Various options for the running state of an app.
      */
@@ -363,6 +373,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
 
         mLineIndicatorColor = Color.TRANSPARENT;
         mLineIndicatorWidth = 0;
+        mIsPinned = false;
 
         setTag(null);
         if (mIconLoadRequest != null) {
@@ -422,6 +433,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         setItemInfo(info);
 
         applyDotState(info, false /* animate */);
+        updatePinIndicator();
         setDownloadStateContentDescription(info, info.getProgressLevel());
     }
 
@@ -915,6 +927,47 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         super.onDraw(canvas);
         drawDotIfNecessary(canvas);
         drawRunningAppIndicatorIfNecessary(canvas);
+        drawPinIndicatorIfNecessary(canvas);
+    }
+
+    /**
+     * Recomputes whether this workspace item is pinned (excluded from shuffle)
+     * and caches the result. Call at bind time and whenever the pin state
+     * changes, so {@link #onDraw} never allocates or touches the repository on
+     * the draw path.
+     */
+    public void updatePinIndicator() {
+        boolean pinned = false;
+        if (mDisplay == DISPLAY_WORKSPACE && getTag() instanceof ItemInfo) {
+            ItemInfo info = (ItemInfo) getTag();
+            if (info.getTargetComponent() != null) {
+                ComponentKey key = new ComponentKey(info.getTargetComponent(), info.user);
+                pinned = app.lawnchair.data.shufflepin.ShufflePinRepository.INSTANCE
+                        .get(getContext()).isPinned(key);
+            }
+        }
+        if (pinned != mIsPinned) {
+            mIsPinned = pinned;
+            invalidate();
+        }
+    }
+
+    /**
+     * Draws a small dot in the bottom-right of the icon if this workspace
+     * item is pinned (excluded from shuffle).
+     */
+    protected void drawPinIndicatorIfNecessary(Canvas canvas) {
+        if (!mIsPinned) return;
+        getIconBounds(mPinIndicatorIconBounds);
+        float radius = mPinIndicatorIconBounds.width() * 0.10f;
+        float cx = mPinIndicatorIconBounds.right - radius;
+        float cy = mPinIndicatorIconBounds.bottom - radius;
+        mPinIndicatorPaint.setColor(PIN_INDICATOR_OUTLINE_COLOR);
+        canvas.drawCircle(cx, cy, radius * 1.12f, mPinIndicatorPaint);
+        mPinIndicatorPaint.setColor(0xFFFFFFFF);
+        canvas.drawCircle(cx, cy, radius, mPinIndicatorPaint);
+        mPinIndicatorPaint.setColor(mPinIndicatorColor);
+        canvas.drawCircle(cx, cy, radius * 0.7f, mPinIndicatorPaint);
     }
 
     /**
