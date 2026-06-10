@@ -81,10 +81,12 @@ import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.popup.PopupContainerWithArrow;
 import com.android.launcher3.search.StringMatcherUtility;
 import com.android.launcher3.util.CancellableTask;
+import com.android.launcher3.util.ComponentKey;
 import com.android.launcher3.util.IntArray;
 import com.android.launcher3.util.MultiTranslateDelegate;
 import com.android.launcher3.util.SafeCloseable;
 import com.android.launcher3.util.ShortcutUtil;
+import com.android.launcher3.util.Themes;
 import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.views.FloatingIconViewCompanion;
 import com.patrykmichalik.opto.core.PreferenceExtensionsKt;
@@ -206,6 +208,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     private final Paint mRunningAppIndicatorPaint;
     private final Rect mRunningAppIconBounds = new Rect();
     private RunningAppState mRunningAppState;
+
+    private final Paint mPinIndicatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Rect mPinIndicatorIconBounds = new Rect();
+    private final int mPinIndicatorColor = Themes.getColorAccent(getContext());
 
     /**
      * Various options for the running state of an app.
@@ -693,6 +699,31 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         super.onDraw(canvas);
         drawDotIfNecessary(canvas);
         drawRunningAppIndicatorIfNecessary(canvas);
+        drawPinIndicatorIfNecessary(canvas);
+    }
+
+    /**
+     * Draws a small dot in the bottom-right of the icon if this workspace
+     * item is pinned (excluded from shuffle).
+     */
+    protected void drawPinIndicatorIfNecessary(Canvas canvas) {
+        if (mDisplay != DISPLAY_WORKSPACE) return;
+        if (!(getTag() instanceof ItemInfo)) return;
+        ItemInfo info = (ItemInfo) getTag();
+        if (info.getTargetComponent() == null) return;
+        ComponentKey key = new ComponentKey(info.getTargetComponent(), info.user);
+        if (!app.lawnchair.data.shufflepin.ShufflePinRepository.INSTANCE
+                .get(getContext()).isPinned(key)) {
+            return;
+        }
+        getIconBounds(mPinIndicatorIconBounds);
+        float radius = mPinIndicatorIconBounds.width() * 0.10f;
+        float cx = mPinIndicatorIconBounds.right - radius;
+        float cy = mPinIndicatorIconBounds.bottom - radius;
+        mPinIndicatorPaint.setColor(0xFFFFFFFF);
+        canvas.drawCircle(cx, cy, radius, mPinIndicatorPaint);
+        mPinIndicatorPaint.setColor(mPinIndicatorColor);
+        canvas.drawCircle(cx, cy, radius * 0.7f, mPinIndicatorPaint);
     }
 
     /**

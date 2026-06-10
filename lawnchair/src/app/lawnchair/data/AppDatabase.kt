@@ -12,23 +12,27 @@ import app.lawnchair.data.folder.FolderItemEntity
 import app.lawnchair.data.folder.service.FolderDao
 import app.lawnchair.data.iconoverride.IconOverride
 import app.lawnchair.data.iconoverride.IconOverrideDao
+import app.lawnchair.data.shufflepin.ShufflePin
+import app.lawnchair.data.shufflepin.ShufflePinDao
 import app.lawnchair.data.wallpaper.Wallpaper
 import app.lawnchair.data.wallpaper.service.WallpaperDao
 import app.lawnchair.util.MainThreadInitializedObject
 import kotlinx.coroutines.runBlocking
 
-@Database(entities = [IconOverride::class, Wallpaper::class, FolderInfoEntity::class, FolderItemEntity::class], version = 3)
+@Database(entities = [IconOverride::class, Wallpaper::class, FolderInfoEntity::class, FolderItemEntity::class, ShufflePin::class], version = 4)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun iconOverrideDao(): IconOverrideDao
     abstract fun wallpaperDao(): WallpaperDao
     abstract fun folderDao(): FolderDao
+    abstract fun shufflePinDao(): ShufflePinDao
 
     suspend fun checkpoint() {
         iconOverrideDao().checkpoint(SimpleSQLiteQuery("pragma wal_checkpoint(full)"))
         wallpaperDao().checkpoint(SimpleSQLiteQuery("pragma wal_checkpoint(full)"))
         folderDao().checkpoint(SimpleSQLiteQuery("pragma wal_checkpoint(full)"))
+        shufflePinDao().checkpoint(SimpleSQLiteQuery("pragma wal_checkpoint(full)"))
     }
 
     fun checkpointSync() {
@@ -89,12 +93,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    """
+            CREATE TABLE IF NOT EXISTS `ShufflePin` (
+                `target` TEXT NOT NULL,
+                PRIMARY KEY(`target`)
+            )
+                    """.trimIndent(),
+                )
+            }
+        }
+
         val INSTANCE = MainThreadInitializedObject { context ->
             Room.databaseBuilder(
                 context,
                 AppDatabase::class.java,
                 "preferences",
-            ).addMigrations(MIGRATION_1_3).addMigrations(MIGRATION_2_3).build()
+            ).addMigrations(MIGRATION_1_3).addMigrations(MIGRATION_2_3).addMigrations(MIGRATION_3_4).build()
         }
     }
 }

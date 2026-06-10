@@ -57,6 +57,9 @@ data object Quickstep : PreferenceRootRoute
 data object Gestures : PreferenceRootRoute
 
 @Serializable
+data object Shuffle : PreferenceRootRoute
+
+@Serializable
 data object Smartspace : PreferenceRootRoute
 
 @Serializable

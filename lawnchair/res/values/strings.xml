@@ -921,4 +921,27 @@
     <string name="grant_requested_permissions_tap">Tap to grant permissions</string>
     <!-- Message shown when all home screen views are removed -->
     <string name="home_screen_all_views_removed_msg">Home screen cleared</string>
+
+    <!-- Shuffle feature -->
+    <string name="shuffle_action">Shuffle</string>
+    <string name="shuffle_description">Randomize app positions on your home screen? Folders and widgets will stay in place.</string>
+    <string name="shuffle_no_items">No apps to shuffle</string>
+    <string name="shuffle_complete">Apps shuffled</string>
+    <string name="save_layout_action">Save layout</string>
+    <string name="save_layout_description">Save your current home screen layout as a restore point. This replaces any previously saved layout.</string>
+    <string name="save_layout_complete">Layout saved</string>
+    <string name="save_layout_failed">Could not save layout</string>
+    <string name="restore_layout_action">Restore layout</string>
+    <string name="restore_layout_description">Restore your saved home screen layout? This will undo any shuffles since the last save.</string>
+    <string name="restore_layout_complete">Layout restored</string>
+    <string name="restore_layout_no_snapshot">No saved layout yet</string>
+    <string name="restore_layout_failed">Could not restore layout</string>
+    <string name="shuffle_pin_action">Pin</string>
+    <string name="shuffle_unpin_action">Unpin</string>
+    <string name="shuffle_settings_label">Shuffle</string>
+    <string name="shuffle_settings_description">Randomize home screen icons to break autopilot phone-checking</string>
+    <string name="shuffle_behavior_label">Behavior</string>
+    <string name="shuffle_auto_save_label">Auto-save a restore point</string>
+    <string name="shuffle_auto_save_description">Save your layout before each shuffle so you can undo it. A layout you saved manually is never overwritten.</string>
+    <string name="shuffle_about_description">Shuffle moves your non-pinned app icons to random spots on the home screen. Pinned apps, folders, and widgets stay put. Long-press an empty area of the home screen to shuffle, save, or restore your layout, and long-press any app icon on the home screen to pin or unpin it.</string>
 </resources>

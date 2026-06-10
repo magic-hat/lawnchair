@@ -18,11 +18,13 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.dp
 import app.lawnchair.LawnchairLauncher
+import app.lawnchair.data.shufflepin.ShufflePinRepository
 import app.lawnchair.override.CustomizeAppDialog
 import app.lawnchair.preferences2.PreferenceManager2
 import app.lawnchair.views.ComposeBottomSheet
 import com.android.launcher3.AbstractFloatingView
 import com.android.launcher3.BaseDraggingActivity
+import com.android.launcher3.LauncherSettings.Favorites.CONTAINER_DESKTOP
 import com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_APPLICATION
 import com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_TASK
 import com.android.launcher3.R
@@ -35,6 +37,8 @@ import com.android.launcher3.util.ComponentKey
 import com.android.launcher3.util.PackageManagerHelper
 import com.patrykmichalik.opto.core.firstBlocking
 import java.net.URISyntaxException
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 
 class LawnchairShortcut {
 
@@ -78,6 +82,16 @@ class LawnchairShortcut {
             if (PackageManagerHelper(activity).isAppSuspended(packageName, itemInfo.user)) return@Factory null
 
             PauseApps(activity, itemInfo, originalView)
+        }
+
+        val PIN_UNPIN = SystemShortcut.Factory { activity: LawnchairLauncher, itemInfo: ItemInfo, originalView: View ->
+            // Pinning only affects the workspace shuffle, so don't offer it for
+            // icons in the drawer, hotseat, or folders.
+            if (itemInfo.container != CONTAINER_DESKTOP) return@Factory null
+            val component = itemInfo.targetComponent ?: return@Factory null
+            val key = ComponentKey(component, itemInfo.user)
+            val pinned = ShufflePinRepository.INSTANCE.get(activity).isPinned(key)
+            PinUnpin(activity, itemInfo, originalView, pinned)
         }
     }
 
@@ -165,6 +179,32 @@ class LawnchairShortcut {
                     }
                 }
                 .show()
+            AbstractFloatingView.closeAllOpenViews(mTarget)
+        }
+    }
+
+    class PinUnpin(
+        target: LawnchairLauncher,
+        itemInfo: ItemInfo,
+        originalView: View,
+        pinned: Boolean,
+    ) : SystemShortcut<LawnchairLauncher>(
+        if (pinned) R.drawable.ic_unpin else R.drawable.ic_pin,
+        if (pinned) R.string.shuffle_unpin_action else R.string.shuffle_pin_action,
+        target,
+        itemInfo,
+        originalView,
+    ) {
+        override fun onClick(view: View) {
+            val component = mItemInfo.targetComponent ?: return
+            val key = ComponentKey(component, mItemInfo.user)
+            val repo = ShufflePinRepository.INSTANCE.get(mTarget)
+            val iconView = mOriginalView
+            MainScope().launch {
+                repo.setPinned(key, !repo.isPinned(key))
+                // Redraw the icon so the pin indicator reflects the new state.
+                iconView?.invalidate()
+            }
             AbstractFloatingView.closeAllOpenViews(mTarget)
         }
     }

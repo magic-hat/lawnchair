@@ -1,20 +1,28 @@
 package app.lawnchair.ui.popup
 
+import android.app.AlertDialog
 import android.view.View
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import app.lawnchair.preferences2.PreferenceManager2.Companion.getInstance
+import app.lawnchair.shuffle.LayoutSnapshotManager
+import app.lawnchair.shuffle.ShuffleManager
 import com.android.launcher3.Launcher
 import com.android.launcher3.R
 import com.android.launcher3.Utilities
 import com.android.launcher3.logging.StatsLogManager.LauncherEvent
 import com.android.launcher3.views.OptionsPopupView.OptionItem
+import com.android.launcher3.views.Snackbar
 import com.patrykmichalik.opto.core.firstBlocking
 import com.patrykmichalik.opto.core.setBlocking
 
 object LauncherOptionsPopup {
     val DEFAULT_ORDER = listOf(
         LauncherOptionPopupItem("carousel", true),
+        LauncherOptionPopupItem("shuffle", true),
+        LauncherOptionPopupItem("save_layout", true),
+        LauncherOptionPopupItem("restore_layout", true),
         LauncherOptionPopupItem("lock", false),
         LauncherOptionPopupItem("edit_mode", false),
         LauncherOptionPopupItem("wallpaper", true),
@@ -44,6 +52,7 @@ object LauncherOptionsPopup {
     /**
      * Returns the list of supported actions
      */
+    @JvmOverloads
     fun getLauncherOptions(
         launcher: Launcher?,
         onLockToggle: (View) -> Boolean,
@@ -52,6 +61,9 @@ object LauncherOptionsPopup {
         onStartWallpaperPicker: (View) -> Boolean,
         onStartWidgetsMenu: (View) -> Boolean,
         onStartHomeSettings: (View) -> Boolean,
+        onShuffle: (View) -> Boolean = ::onShuffleClicked,
+        onSaveLayout: (View) -> Boolean = ::onSaveLayoutClicked,
+        onRestoreLayout: (View) -> Boolean = ::onRestoreLayoutClicked,
     ): ArrayList<OptionItem> {
         val prefs2 = getInstance(launcher!!)
         val lockHomeScreen = prefs2.lockHomeScreen.firstBlocking()
@@ -64,6 +76,27 @@ object LauncherOptionsPopup {
             if (Utilities.existsStyleWallpapers(launcher)) R.drawable.ic_palette else R.drawable.ic_wallpaper
 
         val optionsList = mapOf(
+            "shuffle" to OptionItem(
+                launcher,
+                R.string.shuffle_action,
+                R.drawable.ic_shuffle,
+                LauncherEvent.IGNORE,
+                onShuffle,
+            ),
+            "save_layout" to OptionItem(
+                launcher,
+                R.string.save_layout_action,
+                R.drawable.ic_save_layout,
+                LauncherEvent.IGNORE,
+                onSaveLayout,
+            ),
+            "restore_layout" to OptionItem(
+                launcher,
+                R.string.restore_layout_action,
+                R.drawable.ic_restore_layout,
+                LauncherEvent.IGNORE,
+                onRestoreLayout,
+            ),
             "lock" to OptionItem(
                 launcher,
                 if (lockHomeScreen) R.string.home_screen_unlock else R.string.home_screen_lock,
@@ -128,6 +161,21 @@ object LauncherOptionsPopup {
 
     fun getMetadataForOption(identifier: String): LauncherOptionMetadata {
         return when (identifier) {
+            "shuffle" -> LauncherOptionMetadata(
+                label = R.string.shuffle_action,
+                icon = R.drawable.ic_shuffle,
+            )
+
+            "save_layout" -> LauncherOptionMetadata(
+                label = R.string.save_layout_action,
+                icon = R.drawable.ic_save_layout,
+            )
+
+            "restore_layout" -> LauncherOptionMetadata(
+                label = R.string.restore_layout_action,
+                icon = R.drawable.ic_restore_layout,
+            )
+
             "carousel" -> LauncherOptionMetadata(
                 label = R.string.wallpaper_quick_picker,
                 icon = R.drawable.ic_wallpaper,
@@ -166,6 +214,75 @@ object LauncherOptionsPopup {
 
             else -> throw IllegalArgumentException("invalid popup option")
         }
+    }
+
+    private fun onShuffleClicked(view: View): Boolean {
+        val launcher = Launcher.getLauncher(view.context)
+        AlertDialog.Builder(launcher)
+            .setTitle(R.string.shuffle_action)
+            .setMessage(R.string.shuffle_description)
+            .setPositiveButton(R.string.shuffle_action) { _, _ ->
+                ShuffleManager(launcher, launcher.model).shuffleNow(
+                    Runnable { Snackbar.show(launcher, R.string.shuffle_complete, null) },
+                    Runnable {
+                        Toast.makeText(launcher, R.string.shuffle_no_items, Toast.LENGTH_SHORT).show()
+                    },
+                )
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+        return true
+    }
+
+    private fun onSaveLayoutClicked(view: View): Boolean {
+        val launcher = Launcher.getLauncher(view.context)
+        val manager = LayoutSnapshotManager(launcher, launcher.model)
+        val save = Runnable {
+            manager.saveSnapshot(
+                LayoutSnapshotManager.ORIGIN_MANUAL,
+                Runnable { Snackbar.show(launcher, R.string.save_layout_complete, null) },
+                Runnable {
+                    Toast.makeText(launcher, R.string.save_layout_failed, Toast.LENGTH_SHORT).show()
+                },
+            )
+        }
+        if (manager.hasSnapshot()) {
+            AlertDialog.Builder(launcher)
+                .setTitle(R.string.save_layout_action)
+                .setMessage(R.string.save_layout_description)
+                .setPositiveButton(R.string.save_layout_action) { _, _ -> save.run() }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        } else {
+            save.run()
+        }
+        return true
+    }
+
+    private fun onRestoreLayoutClicked(view: View): Boolean {
+        val launcher = Launcher.getLauncher(view.context)
+        val manager = LayoutSnapshotManager(launcher, launcher.model)
+        if (!manager.hasSnapshot()) {
+            Toast.makeText(launcher, R.string.restore_layout_no_snapshot, Toast.LENGTH_SHORT).show()
+            return true
+        }
+        AlertDialog.Builder(launcher)
+            .setTitle(R.string.restore_layout_action)
+            .setMessage(R.string.restore_layout_description)
+            .setPositiveButton(R.string.restore_layout_action) { _, _ ->
+                manager.restoreSnapshot(
+                    Runnable { Snackbar.show(launcher, R.string.restore_layout_complete, null) },
+                    Runnable {
+                        Toast.makeText(launcher, R.string.restore_layout_no_snapshot, Toast.LENGTH_SHORT).show()
+                    },
+                    Runnable {
+                        Toast.makeText(launcher, R.string.restore_layout_failed, Toast.LENGTH_SHORT).show()
+                    },
+                )
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+        return true
     }
 
     fun migrateLegacyPreferences(
