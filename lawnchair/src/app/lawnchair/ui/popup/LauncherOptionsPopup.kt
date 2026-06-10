@@ -1,14 +1,19 @@
 package app.lawnchair.ui.popup
 
+import android.app.AlertDialog
 import android.view.View
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import app.lawnchair.preferences2.PreferenceManager2.Companion.getInstance
+import app.lawnchair.shuffle.LayoutSnapshotManager
+import app.lawnchair.shuffle.ShuffleManager
 import com.android.launcher3.Launcher
 import com.android.launcher3.R
 import com.android.launcher3.Utilities
 import com.android.launcher3.logging.StatsLogManager.LauncherEvent
 import com.android.launcher3.views.OptionsPopupView.OptionItem
+import com.android.launcher3.views.Snackbar
 import com.patrykmichalik.opto.core.firstBlocking
 import com.patrykmichalik.opto.core.setBlocking
 
@@ -47,6 +52,7 @@ object LauncherOptionsPopup {
     /**
      * Returns the list of supported actions
      */
+    @JvmOverloads
     fun getLauncherOptions(
         launcher: Launcher?,
         onLockToggle: (View) -> Boolean,
@@ -55,9 +61,9 @@ object LauncherOptionsPopup {
         onStartWallpaperPicker: (View) -> Boolean,
         onStartWidgetsMenu: (View) -> Boolean,
         onStartHomeSettings: (View) -> Boolean,
-        onShuffle: (View) -> Boolean = { false },
-        onSaveLayout: (View) -> Boolean = { false },
-        onRestoreLayout: (View) -> Boolean = { false },
+        onShuffle: (View) -> Boolean = ::onShuffleClicked,
+        onSaveLayout: (View) -> Boolean = ::onSaveLayoutClicked,
+        onRestoreLayout: (View) -> Boolean = ::onRestoreLayoutClicked,
     ): ArrayList<OptionItem> {
         val prefs2 = getInstance(launcher!!)
         val lockHomeScreen = prefs2.lockHomeScreen.firstBlocking()
@@ -208,6 +214,75 @@ object LauncherOptionsPopup {
 
             else -> throw IllegalArgumentException("invalid popup option")
         }
+    }
+
+    private fun onShuffleClicked(view: View): Boolean {
+        val launcher = Launcher.getLauncher(view.context)
+        AlertDialog.Builder(launcher)
+            .setTitle(R.string.shuffle_action)
+            .setMessage(R.string.shuffle_description)
+            .setPositiveButton(R.string.shuffle_action) { _, _ ->
+                ShuffleManager(launcher, launcher.model).shuffleNow(
+                    Runnable { Snackbar.show(launcher, R.string.shuffle_complete, null) },
+                    Runnable {
+                        Toast.makeText(launcher, R.string.shuffle_no_items, Toast.LENGTH_SHORT).show()
+                    },
+                )
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+        return true
+    }
+
+    private fun onSaveLayoutClicked(view: View): Boolean {
+        val launcher = Launcher.getLauncher(view.context)
+        val manager = LayoutSnapshotManager(launcher, launcher.model)
+        val save = Runnable {
+            manager.saveSnapshot(
+                LayoutSnapshotManager.ORIGIN_MANUAL,
+                Runnable { Snackbar.show(launcher, R.string.save_layout_complete, null) },
+                Runnable {
+                    Toast.makeText(launcher, R.string.save_layout_failed, Toast.LENGTH_SHORT).show()
+                },
+            )
+        }
+        if (manager.hasSnapshot()) {
+            AlertDialog.Builder(launcher)
+                .setTitle(R.string.save_layout_action)
+                .setMessage(R.string.save_layout_description)
+                .setPositiveButton(R.string.save_layout_action) { _, _ -> save.run() }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        } else {
+            save.run()
+        }
+        return true
+    }
+
+    private fun onRestoreLayoutClicked(view: View): Boolean {
+        val launcher = Launcher.getLauncher(view.context)
+        val manager = LayoutSnapshotManager(launcher, launcher.model)
+        if (!manager.hasSnapshot()) {
+            Toast.makeText(launcher, R.string.restore_layout_no_snapshot, Toast.LENGTH_SHORT).show()
+            return true
+        }
+        AlertDialog.Builder(launcher)
+            .setTitle(R.string.restore_layout_action)
+            .setMessage(R.string.restore_layout_description)
+            .setPositiveButton(R.string.restore_layout_action) { _, _ ->
+                manager.restoreSnapshot(
+                    Runnable { Snackbar.show(launcher, R.string.restore_layout_complete, null) },
+                    Runnable {
+                        Toast.makeText(launcher, R.string.restore_layout_no_snapshot, Toast.LENGTH_SHORT).show()
+                    },
+                    Runnable {
+                        Toast.makeText(launcher, R.string.restore_layout_failed, Toast.LENGTH_SHORT).show()
+                    },
+                )
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+        return true
     }
 
     fun migrateLegacyPreferences(

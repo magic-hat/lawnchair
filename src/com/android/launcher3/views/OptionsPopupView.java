@@ -17,7 +17,6 @@ package com.android.launcher3.views;
 
 import static com.android.launcher3.LauncherState.EDIT_MODE;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -49,7 +48,6 @@ import com.android.launcher3.popup.ArrowPopup;
 import com.android.launcher3.shortcuts.DeepShortcutView;
 import com.android.launcher3.testing.TestLogging;
 import com.android.launcher3.testing.shared.TestProtocol;
-import com.android.launcher3.views.Snackbar;
 import com.android.launcher3.widget.picker.WidgetsFullSheet;
 import com.patrykmichalik.opto.core.PreferenceExtensionsKt;
 
@@ -206,79 +204,8 @@ public class OptionsPopupView<T extends Context & ActivityContext> extends Arrow
             OptionsPopupView::enterHomeGardening,
             OptionsPopupView::startWallpaperPicker,
             OptionsPopupView::onWidgetsClicked,
-            OptionsPopupView::startSettings,
-            OptionsPopupView::onShuffleClicked,
-            OptionsPopupView::onSaveLayoutClicked,
-            OptionsPopupView::onRestoreLayoutClicked
+            OptionsPopupView::startSettings
         );
-    }
-
-    private static boolean onShuffleClicked(View view) {
-        Launcher launcher = Launcher.getLauncher(view.getContext());
-        new AlertDialog.Builder(launcher)
-            .setTitle(R.string.shuffle_action)
-            .setMessage(R.string.shuffle_description)
-            .setPositiveButton(R.string.shuffle_action, (d, i) -> {
-                app.lawnchair.shuffle.ShuffleManager shuffleManager =
-                    new app.lawnchair.shuffle.ShuffleManager(launcher, launcher.getModel());
-                shuffleManager.shuffleNow(
-                    () -> Snackbar.show(launcher, R.string.shuffle_complete, null),
-                    () -> Toast.makeText(launcher, R.string.shuffle_no_items,
-                        Toast.LENGTH_SHORT).show()
-                );
-            })
-            .setNegativeButton(android.R.string.cancel, null)
-            .create()
-            .show();
-        return true;
-    }
-
-    private static boolean onSaveLayoutClicked(View view) {
-        Launcher launcher = Launcher.getLauncher(view.getContext());
-        app.lawnchair.shuffle.LayoutSnapshotManager manager =
-            new app.lawnchair.shuffle.LayoutSnapshotManager(launcher, launcher.getModel());
-        Runnable save = () -> manager.saveSnapshot(
-            () -> Snackbar.show(launcher, R.string.save_layout_complete, null),
-            () -> Toast.makeText(launcher, R.string.save_layout_failed,
-                Toast.LENGTH_SHORT).show()
-        );
-        if (manager.hasSnapshot()) {
-            new AlertDialog.Builder(launcher)
-                .setTitle(R.string.save_layout_action)
-                .setMessage(R.string.save_layout_description)
-                .setPositiveButton(R.string.save_layout_action, (d, i) -> save.run())
-                .setNegativeButton(android.R.string.cancel, null)
-                .create()
-                .show();
-        } else {
-            save.run();
-        }
-        return true;
-    }
-
-    private static boolean onRestoreLayoutClicked(View view) {
-        Launcher launcher = Launcher.getLauncher(view.getContext());
-        app.lawnchair.shuffle.LayoutSnapshotManager manager =
-            new app.lawnchair.shuffle.LayoutSnapshotManager(launcher, launcher.getModel());
-        if (!manager.hasSnapshot()) {
-            Toast.makeText(launcher, R.string.restore_layout_no_snapshot,
-                Toast.LENGTH_SHORT).show();
-            return true;
-        }
-        new AlertDialog.Builder(launcher)
-            .setTitle(R.string.restore_layout_action)
-            .setMessage(R.string.restore_layout_description)
-            .setPositiveButton(R.string.restore_layout_action, (d, i) -> manager.restoreSnapshot(
-                () -> Snackbar.show(launcher, R.string.restore_layout_complete, null),
-                () -> Toast.makeText(launcher, R.string.restore_layout_no_snapshot,
-                    Toast.LENGTH_SHORT).show(),
-                () -> Toast.makeText(launcher, R.string.restore_layout_failed,
-                    Toast.LENGTH_SHORT).show()
-            ))
-            .setNegativeButton(android.R.string.cancel, null)
-            .create()
-            .show();
-        return true;
     }
 
     private static boolean enterHomeGardening(View view) {

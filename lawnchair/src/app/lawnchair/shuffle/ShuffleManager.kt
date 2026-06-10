@@ -4,14 +4,17 @@ import android.content.ContentValues
 import android.content.Context
 import android.util.Log
 import app.lawnchair.data.shufflepin.ShufflePinRepository
+import app.lawnchair.preferences2.PreferenceManager2
 import com.android.launcher3.InvariantDeviceProfile
 import com.android.launcher3.LauncherModel
 import com.android.launcher3.LauncherSettings.Favorites
+import com.android.launcher3.config.FeatureFlags
 import com.android.launcher3.model.BgDataModel
 import com.android.launcher3.model.data.ItemInfo
 import com.android.launcher3.util.ComponentKey
 import com.android.launcher3.util.Executors
 import com.android.launcher3.util.GridOccupancy
+import com.patrykmichalik.opto.core.firstBlocking
 
 /**
  * Manages the shuffle operation for home screen icons.
@@ -40,6 +43,27 @@ class ShuffleManager(
     )
 
     fun shuffleNow(onSuccess: Runnable, onEmpty: Runnable) {
+        val autoSave = PreferenceManager2.getInstance(context)
+            .autoSaveLayoutBeforeShuffle.firstBlocking()
+        val snapshotManager = LayoutSnapshotManager(context, model)
+
+        // Keep a way back to the layout as it was before this shuffle. Auto-save
+        // refreshes snapshots it created itself but never overwrites one the user
+        // saved manually. If the save fails we still shuffle, so the action never
+        // silently breaks.
+        val origin = snapshotManager.snapshotOrigin()
+        if (autoSave && origin != LayoutSnapshotManager.ORIGIN_MANUAL) {
+            snapshotManager.saveSnapshot(
+                origin = LayoutSnapshotManager.ORIGIN_AUTO,
+                onSuccess = Runnable { performShuffleAsync(onSuccess, onEmpty) },
+                onFailure = Runnable { performShuffleAsync(onSuccess, onEmpty) },
+            )
+        } else {
+            performShuffleAsync(onSuccess, onEmpty)
+        }
+    }
+
+    private fun performShuffleAsync(onSuccess: Runnable, onEmpty: Runnable) {
         model.loadAsync { dataModel ->
             if (dataModel == null) {
                 Log.w(TAG, "Data model not loaded, cannot shuffle")
@@ -83,8 +107,15 @@ class ShuffleManager(
             val component = item.targetComponent
             when {
                 item.itemType == Favorites.ITEM_TYPE_FOLDER -> fixedItems.add(item)
+
                 item.itemType == Favorites.ITEM_TYPE_APP_PAIR -> fixedItems.add(item)
+
+                // Shuffleable items are placed into single free cells, so anything
+                // larger than 1x1 must stay put.
+                item.spanX != 1 || item.spanY != 1 -> fixedItems.add(item)
+
                 component != null && ComponentKey(component, item.user) in pinnedKeys -> fixedItems.add(item)
+
                 else -> shuffleableItems.add(item)
             }
         }
@@ -114,16 +145,28 @@ class ShuffleManager(
             }
         }
 
-        // Build occupancy grids for each screen (marking only fixed items)
+        // Build occupancy grids for each screen, reserving the search container
+        // region the loader treats as occupied — placing an icon there would get
+        // it deleted on the next load.
+        val reservedColumns = ShuffleGrid.reservedColumns(
+            idp.numSearchContainerColumns,
+            FeatureFlags.topQsbOnFirstScreenEnabled(context),
+        )
         val occupancyMap = mutableMapOf<Int, GridOccupancy>()
         for (screenId in screenIds) {
-            occupancyMap[screenId] = GridOccupancy(numColumns, numRows)
+            val occupancy = GridOccupancy(numColumns, numRows)
+            ShuffleGrid.reserve(occupancy, screenId, reservedColumns)
+            occupancyMap[screenId] = occupancy
         }
 
         // Mark fixed items as occupied
         for (item in fixedItems) {
             occupancyMap[item.screenId]?.markCells(
-                item.cellX, item.cellY, item.spanX, item.spanY, true,
+                item.cellX,
+                item.cellY,
+                item.spanX,
+                item.spanY,
+                true,
             )
         }
 
