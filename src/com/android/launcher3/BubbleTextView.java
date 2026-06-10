@@ -86,6 +86,7 @@ import com.android.launcher3.util.IntArray;
 import com.android.launcher3.util.MultiTranslateDelegate;
 import com.android.launcher3.util.SafeCloseable;
 import com.android.launcher3.util.ShortcutUtil;
+import com.android.launcher3.util.Themes;
 import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.views.FloatingIconViewCompanion;
 import com.patrykmichalik.opto.core.PreferenceExtensionsKt;
@@ -210,6 +211,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
 
     private final Paint mPinIndicatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Rect mPinIndicatorIconBounds = new Rect();
+    private final int mPinIndicatorColor = Themes.getColorAccent(getContext());
 
     /**
      * Various options for the running state of an app.
@@ -720,7 +722,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         float cy = mPinIndicatorIconBounds.bottom - radius;
         mPinIndicatorPaint.setColor(0xFFFFFFFF);
         canvas.drawCircle(cx, cy, radius, mPinIndicatorPaint);
-        mPinIndicatorPaint.setColor(0xFF1976D2);
+        mPinIndicatorPaint.setColor(mPinIndicatorColor);
         canvas.drawCircle(cx, cy, radius * 0.7f, mPinIndicatorPaint);
     }
 

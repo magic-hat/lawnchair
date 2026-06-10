@@ -24,6 +24,7 @@ import app.lawnchair.preferences2.PreferenceManager2
 import app.lawnchair.views.ComposeBottomSheet
 import com.android.launcher3.AbstractFloatingView
 import com.android.launcher3.BaseDraggingActivity
+import com.android.launcher3.LauncherSettings.Favorites.CONTAINER_DESKTOP
 import com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_APPLICATION
 import com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_TASK
 import com.android.launcher3.R
@@ -84,6 +85,9 @@ class LawnchairShortcut {
         }
 
         val PIN_UNPIN = SystemShortcut.Factory { activity: LawnchairLauncher, itemInfo: ItemInfo, originalView: View ->
+            // Pinning only affects the workspace shuffle, so don't offer it for
+            // icons in the drawer, hotseat, or folders.
+            if (itemInfo.container != CONTAINER_DESKTOP) return@Factory null
             val component = itemInfo.targetComponent ?: return@Factory null
             val key = ComponentKey(component, itemInfo.user)
             val pinned = ShufflePinRepository.INSTANCE.get(activity).isPinned(key)
@@ -195,8 +199,11 @@ class LawnchairShortcut {
             val component = mItemInfo.targetComponent ?: return
             val key = ComponentKey(component, mItemInfo.user)
             val repo = ShufflePinRepository.INSTANCE.get(mTarget)
+            val iconView = mOriginalView
             MainScope().launch {
                 repo.setPinned(key, !repo.isPinned(key))
+                // Redraw the icon so the pin indicator reflects the new state.
+                iconView?.invalidate()
             }
             AbstractFloatingView.closeAllOpenViews(mTarget)
         }

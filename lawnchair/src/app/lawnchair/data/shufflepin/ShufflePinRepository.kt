@@ -3,9 +3,6 @@ package app.lawnchair.data.shufflepin
 import android.content.Context
 import app.lawnchair.data.AppDatabase
 import app.lawnchair.util.MainThreadInitializedObject
-import com.android.launcher3.LauncherAppState
-import com.android.launcher3.pm.PackageInstallInfo
-import com.android.launcher3.pm.PackageInstallInfo.STATUS_INSTALLED
 import com.android.launcher3.util.ComponentKey
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.Dispatchers
@@ -36,14 +33,10 @@ class ShufflePinRepository(private val context: Context) {
     fun isPinned(target: ComponentKey): Boolean = target in _pinnedSet
 
     suspend fun setPinned(target: ComponentKey, pinned: Boolean) {
+        // Update the in-memory set immediately so callers reading right after a
+        // toggle (e.g. the icon redraw) don't race the Room flow emission.
+        _pinnedSet = if (pinned) _pinnedSet + target else _pinnedSet - target
         if (pinned) dao.insert(ShufflePin(target)) else dao.delete(target)
-        LauncherAppState.getInstance(context).model.onPackageStateChanged(
-            PackageInstallInfo.fromState(
-                STATUS_INSTALLED,
-                target.componentName.packageName,
-                target.user,
-            ),
-        )
     }
 
     companion object {
